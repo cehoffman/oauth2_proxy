@@ -2,6 +2,8 @@ box:
   id: alpine
   cmd: /bin/sh
 
+no-response-timeout: 20
+
 build:
   box:
     id: golang:1.8-alpine
@@ -12,8 +14,8 @@ build:
         name: install dependencies
         code: |
           apk --update add perl git curl bash
-          curl -s https://raw.githubusercontent.com/pote/gpm/v1.4.0/bin/gpm > /bin/gpm
-          chmod +x /bin/gpm
+          curl -Ls https://github.com/lalyos/docker-upx/releases/download/v3.91/upx  > /bin/upx
+          chmod +x /bin/upx
 
     - script:
         name: build ca bundle
@@ -25,28 +27,12 @@ build:
     - script:
         name: fetch oauth2_proxy
         code: |
-          mkdir -p "$GOPATH"/src/github.com/bitly/oauth2_proxy
-          git clone --branch v2.2 https://github.com/bitly/oauth2_proxy "$GOPATH"/src/github.com/bitly/oauth2_proxy
-          cd "$GOPATH"/src/github.com/bitly/oauth2_proxy
-          gpm install
+          curl -Ls https://github.com/bitly/oauth2_proxy/releases/download/v2.2/oauth2_proxy-2.2.0.linux-amd64.go1.8.1.tar.gz | tar -zxvf -
+          mv oauth2_proxy*/oauth2_proxy "$WERCKER_OUTPUT_DIR"
 
     - script:
-        name: go vet
-        code: |
-          cd "$GOPATH"/src/github.com/bitly/oauth2_proxy
-          go vet ./...
-
-    - script:
-        name: go test
-        code: |
-          cd "$GOPATH"/src/github.com/bitly/oauth2_proxy
-          go test --timeout=60s ./...
-
-    - script:
-        name: go build
-        code: |
-          cd "$GOPATH"/src/github.com/bitly/oauth2_proxy
-          CGO_ENABLED=0 go build --ldflags "-s -w -extldflags '-static'" -o "$WERCKER_OUTPUT_DIR"/oauth2_proxy .
+        name: minimize
+        code: upx --best --ultra-brute "$WERCKER_OUTPUT_DIR"/oauth2_proxy
 
 push:
   steps:
