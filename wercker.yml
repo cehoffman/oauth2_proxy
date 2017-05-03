@@ -4,7 +4,7 @@ box:
 
 build:
   box:
-    id: golang:alpine
+    id: golang:1.8-alpine
     cmd: /bin/sh
 
   steps:
