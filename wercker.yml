@@ -31,11 +31,16 @@ build:
           gpm install
 
     - script:
-        name: go test
+        name: go vet
         code: |
           cd "$GOPATH"/src/github.com/bitly/oauth2_proxy
           go vet ./...
-          go test ./...
+
+    - script:
+        name: go test
+        code: |
+          cd "$GOPATH"/src/github.com/bitly/oauth2_proxy
+          go test --timeout=60s ./...
 
     - script:
         name: go build
