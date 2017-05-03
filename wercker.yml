@@ -11,19 +11,35 @@ build:
     - script:
         name: install dependencies
         code: |
-          apk --update add perl git curl
-          git clone --depth 1 https://github.com/bagder/curl.git
+          apk --update add perl git curl bash
+          curl -s https://raw.githubusercontent.com/pote/gpm/v1.4.0/bin/gpm > /bin/gpm
+          chmod +x /bin/gpm
 
     - script:
         name: build ca bundle
         code: |
           mkdir -p "$WERCKER_OUTPUT_DIR"/etc/ssl/certs/
-          ./curl/lib/mk-ca-bundle.pl "$WERCKER_OUTPUT_DIR"/etc/ssl/certs/ca-certificates.crt
+          curl -LO https://raw.githubusercontent.com/curl/curl/master/lib/mk-ca-bundle.pl
+          perl ./mk-ca-bundle.pl "$WERCKER_OUTPUT_DIR"/etc/ssl/certs/ca-certificates.crt
 
     - script:
-        name: build oauth2_proxy
+        name: fetch oauth2_proxy
         code: |
-          go get github.com/bitly/oauth2_proxy
+          mkdir -p "$GOPATH"/src/github.com/bitly/oauth2_proxy
+          git clone --branch v2.2 https://github.com/bitly/oauth2_proxy "$GOPATH"/src/github.com/bitly/oauth2_proxy
+          cd "$GOPATH"/src/github.com/bitly/oauth2_proxy
+          gpm install
+
+    - script:
+        name: go test
+        code: |
+          cd "$GOPATH"/src/github.com/bitly/oauth2_proxy
+          go vet ./...
+          go test ./...
+
+    - script:
+        name: go build
+        code: |
           cd "$GOPATH"/src/github.com/bitly/oauth2_proxy
           CGO_ENABLED=0 go build --ldflags "-s -w -extldflags '-static'" -o "$WERCKER_OUTPUT_DIR"/oauth2_proxy .
 
